@@ -2,7 +2,7 @@
 SNMP handler for Epson printers.
 
 Based on https://github.com/gentu/reink-net/blob/master/reink-net.rb
-Modified for the EPSON WF-7525 Series
+Modified for the Epson Stylus Office BX535WD Series
 """
 
 import itertools
@@ -18,20 +18,20 @@ class Printer:
     """Dataclass to store information about a printer."""
 
     hostname: str
-    password: list[int] = field(default_factory=lambda: [101, 0])
+    password: list[int] = field(default_factory=lambda: [55, 8])
     eeprom_link: str = "1.3.6.1.4.1.1248.1.2.2.44.1.1.2.1"
     ink_levels: dict = field(
         default_factory=lambda: {
-            "black": 0x1C,
-            "magenta": 0x1F,
-            "yellow": 0x22,
-            "cyan": 0x25,
+            "black": 25,
+            "magenta": 28,
+            "yellow": 31,
+            "cyan": 34,
         }
     )
     waste_inks: list[dict] = field(
         default_factory=lambda: [
-            {"oids": [20, 21], "total": 19650},
-            {"oids": [22, 23], "total": 5205},
+            {"oids": [20, 21], "total": 11309},
+            {"oids": [22, 23], "total": 4289},
         ]
     )
 
@@ -90,7 +90,7 @@ class Session(easysnmp.Session):
             f".{self.printer.password[1]}"
             ".66.189.33"
             f".{oid}.0.{value}"
-            ".84.98.116.98.111.114.118.98"
+            ".85.116.118.120.98.99.118.108"
         )
 
     def read_eeprom(self, oid: int) -> str:
@@ -165,7 +165,7 @@ class Session(easysnmp.Session):
         hex(int((80 / 100) * 19650)) == 0x3d68
         hex(104), hex(61) = (0x68, 0x3d)
         """
-        data = {20: 0, 21: 0, 22: 0, 23: 0, 24: 0, 25: 0, 59: 0, 60: 94, 61: 94}
+        data = {oid: 0 for waste_ink in self.printer.waste_inks for oid in waste_ink["oids"]}
         for oid, value in data.items():
             self.write_eeprom(oid, value)
 
@@ -195,4 +195,7 @@ if __name__ == "__main__":
         sys.exit(1)
     printer = Printer(args[0])
     session = Session(printer)
+    # session.brute_force()
+    pprint(printer.stats)
+    # session.reset_waste_ink_levels()
     pprint(printer.stats)

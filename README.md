@@ -6,7 +6,7 @@ Read information and reset waste ink counters on Epson printers, using SNMP.
 
 ## Description
 
-This project was designed for a EPSON WF-7525 Series printer, but inspired by [projects](#resources) for other models.
+This project was designed for a Epson Stylus Office BX535WD Series printer, but inspired by [projects](#resources) for other models.
 Hopefully, releasing this code will help save a printer from the trash and improve consumer repairability for these devices.
 Feel free to raise an issue for adding support for another model of printer, with logs from `wicreset` or similar attached.
 
@@ -39,6 +39,29 @@ e.g.
 ```
 Please note that different counters for the same printer may use different constants.
 
+### Make it work with your Epson printer
+#### Ink levels
+After putting the password in `main.py`, you can use Wireshark to find the OID of the waste ink level. Make sure to filter `snmp` protocol.
+Make sure to uncomment the `reset_waste_ink_levels()` line. In wireshark look for a response from the printer IP to your IP like `get-response 1.3.6.1.4.1.1248.1.2.2.44.1.1.2.1.115.116.1.0.1`. Mark the UDP body and search for the ink level percentage in the dump you obtained in the software sending the request. In the example this is 78% for black. 
+
+![](images/image-1.png)
+
+Start counting the hex numbers from the body start, with index zero. In this example the value is 25. The other 3 colors are each 3 hex nubmers further. So the cyan value is 28, magenta is 31 and yellow is 34. Replace them in the code. Now `printer.stats` should return the ink levels.
+
+### Waste ink levels
+![](images/image.png)
+After sending the request with, there are 4 OIDs requested. Here 20, 21, 22 and 23. These are the numbers you are looking for, fill them in.
+
+### Update the write OIDs
+
+For example change the Serial Number and listen for packages. Replace the common suffix from the response with the suffix in `get_write_eeprom_oid`
+![](images/image-2.png)
+
+## Usage
+Install the requirements with `pip install -r requirements.txt`.
+Uncomment the `reset_waste_ink_levels()` line and run `python main.py <your printer ip>`.
+Make sure to restart the printer after running the script.
+
 ## Libraries
 
 - [easysnmp](https://pypi.org/project/easysnmp/) - SNMP
@@ -61,11 +84,3 @@ epson-printer-snmp is licensed under the GPL v3 for everyone to use, modify and 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 [![GPL v3 Logo](https://www.gnu.org/graphics/gplv3-127x51.png)](https://www.gnu.org/licenses/gpl-3.0-standalone.html)
-
-## Donate
-
-If you found this project useful, please consider donating. Any amount is greatly appreciated! Thank you :smiley:
-
-[![PayPal](https://www.paypalobjects.com/webstatic/mktg/Logo/pp-logo-150px.png)](https://paypal.me/ZackDidcott)
-
-My bitcoin address is: [bc1q5aygkqypxuw7cjg062tnh56sd0mxt0zd5md536](bitcoin://bc1q5aygkqypxuw7cjg062tnh56sd0mxt0zd5md536)
